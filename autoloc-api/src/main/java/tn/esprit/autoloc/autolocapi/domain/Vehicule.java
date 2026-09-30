@@ -1,13 +1,13 @@
 package tn.esprit.autoloc.autolocapi.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import java.math.BigDecimal;
 
 @Entity
-@Data
+@Table(name = "vehicule")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -15,18 +15,20 @@ public class Vehicule {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long idVehicule;
 
+    @Column(nullable = false, unique = true, length = 20)
     private String immatriculation;
+
     private String marque;
     private String modele;
-    private int annee;
-    private double kilometrage;
-    private double prixLocationJournalier;
-
-    @Enumerated(EnumType.STRING)
-    private StatutVehicule statut;
 
     @Enumerated(EnumType.STRING)
     private CategorieVehicule categorie;
+
+    @Column(precision = 10, scale = 2)
+    private BigDecimal tarifJournalier;
+
+    @Enumerated(EnumType.STRING)
+    private StatutVehicule statut;
 }
