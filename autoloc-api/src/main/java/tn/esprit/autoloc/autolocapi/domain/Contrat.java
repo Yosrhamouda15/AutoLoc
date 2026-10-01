@@ -27,7 +27,7 @@ public class Contrat {
     private boolean valide;
 
     @OneToMany(mappedBy = "contrat", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Paiement> paiements = new ArrayList<>();
+    private Set<Paiement> paiements = new HashSet<>();
 
     @OneToOne(mappedBy = "contrat")
     private Reservation reservation;
