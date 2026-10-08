@@ -3,24 +3,38 @@ package tn.esprit.autoloc.autolocapi;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.CrudRepository;
 import tn.esprit.autoloc.autolocapi.domain.Agence;
 import tn.esprit.autoloc.autolocapi.domain.CategorieVehicule;
 import tn.esprit.autoloc.autolocapi.domain.StatutVehicule;
 import tn.esprit.autoloc.autolocapi.domain.Vehicule;
+import tn.esprit.autoloc.autolocapi.repository.IAgenceRepository;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
 @SpringBootTest
 class AgenceRepositoryTest {
 
+    // étape 2 : attribut renommé
     @Autowired
-    private AgenceRepositoryMock agenceRepository;
+    private AgenceRepositoryMock basicAgenceRepository;
 
-    @Test
-    void addAgence() {
+    // étape 3 : le dépôt Spring Data JPA, DANS la classe
+    @Autowired
+    private IAgenceRepository fullAgenceRepository;
+
+    // étapes 4, 5, 6 : privée, sans @Test, dépôt en paramètre
+    private void addAgence(CrudRepository<Agence, Long> repository) {
+        // 5 chiffres max, jamais négatif : "210 TUN 1234-" (13 car.) + 5 = 18 <= 20
+        String suffixe = String.valueOf(System.currentTimeMillis() % 100000);
+
         Agence agence = new Agence();
         agence.setNom("AutoLoc Tunis Centre");
         agence.setVille("Tunis");
@@ -28,7 +42,7 @@ class AgenceRepositoryTest {
         agence.setTelephone("71000000");
 
         Vehicule v1 = new Vehicule();
-        v1.setImmatriculation("210 TUN 1234");
+        v1.setImmatriculation("210 TUN 1234-" + suffixe);
         v1.setMarque("Renault");
         v1.setModele("Clio");
         v1.setCategorie(CategorieVehicule.CITADINE);
@@ -36,7 +50,7 @@ class AgenceRepositoryTest {
         v1.setStatut(StatutVehicule.DISPONIBLE);
 
         Vehicule v2 = new Vehicule();
-        v2.setImmatriculation("215 TUN 5678");
+        v2.setImmatriculation("215 TUN 5678-" + suffixe);
         v2.setMarque("Peugeot");
         v2.setModele("308");
         v2.setCategorie(CategorieVehicule.BERLINE);
@@ -46,13 +60,25 @@ class AgenceRepositoryTest {
         agence.addVehicule(v1);
         agence.addVehicule(v2);
 
-        agenceRepository.save(agence);
+        repository.save(agence);
+    }
+
+    // étape 7
+    @Test
+    void basicAddAgence() {
+        addAgence(basicAgenceRepository);
     }
 
     @Test
-    void loadAgence() {
+    void fullAddAgence() {
+        addAgence(fullAgenceRepository);
+    }
+
+    // étape 10 : même principe pour le chargement
+    private void loadAgence(CrudRepository<Agence, Long> repository, String typeDepot) {
         StringBuilder sb = new StringBuilder();
-        for (Agence a : agenceRepository.findAll()) {
+        sb.append("Dépôt utilisé : ").append(typeDepot).append("\n");
+        for (Agence a : repository.findAll()) {
             sb.append("Agence ").append(a.getIdAgence())
                     .append(" : ").append(a.getNom()).append("\n");
             sb.append("  Nombre de vehicules : ")
@@ -61,6 +87,49 @@ class AgenceRepositoryTest {
                 sb.append("  - ").append(v.getIdVehicule())
                         .append(" / ").append(v.getImmatriculation()).append("\n");
             }
+        }
+        fail(sb.toString());
+    }
+
+    @Test
+    void basicLoadAgence() {
+        loadAgence(basicAgenceRepository, "basic (AgenceRepositoryMock)");
+    }
+
+    @Test
+    void fullLoadAgence() {
+        loadAgence(fullAgenceRepository, "full (IAgenceRepository / JpaRepository)");
+    }
+
+    // étapes 11 à 14 : agences triées par id décroissant
+    @Test
+    void loadSortedAgences() {
+        List<Agence> agences = fullAgenceRepository.findAll(Sort.by(Sort.Direction.DESC, "idAgence"));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Agences triées par id décroissant\n");
+        for (Agence a : agences) {
+            sb.append("Agence ").append(a.getIdAgence())
+                    .append(" : ").append(a.getNom())
+                    .append(" (").append(a.getVille()).append(")\n");
+        }
+        fail(sb.toString());
+    }
+
+    // étapes 15 à 18 : tri décroissant + pagination par lots de 2
+    // (le tri est volontairement dupliqué par rapport à loadSortedAgences)
+    @Test
+    void loadPagedAgences() {
+        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "idAgence"));
+        Page<Agence> page = fullAgenceRepository.findAll(pageable);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Nombre total de pages : ").append(page.getTotalPages()).append("\n");
+        sb.append("Page en cours : ").append(page.getNumber()).append("\n");
+        for (Agence a : page.getContent()) {
+            sb.append("Agence ").append(a.getIdAgence())
+                    .append(" : ").append(a.getNom())
+                    .append(" (").append(a.getVille()).append(")\n");
         }
         fail(sb.toString());
     }
