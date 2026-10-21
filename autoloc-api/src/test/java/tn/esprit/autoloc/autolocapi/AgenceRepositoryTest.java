@@ -118,18 +118,22 @@ class AgenceRepositoryTest {
 
     // étapes 15 à 18 : tri décroissant + pagination par lots de 2
     // (le tri est volontairement dupliqué par rapport à loadSortedAgences)
+    // étapes 15 à 18 : tri décroissant + pagination par lots de 2, toutes les pages
+    // (le tri est volontairement dupliqué par rapport à loadSortedAgences)
     @Test
     void loadPagedAgences() {
-        Pageable pageable = PageRequest.of(0, 2, Sort.by(Sort.Direction.DESC, "idAgence"));
-        Page<Agence> page = fullAgenceRepository.findAll(pageable);
-
+        Sort sort = Sort.by(Sort.Direction.DESC, "idAgence");
         StringBuilder sb = new StringBuilder();
-        sb.append("Nombre total de pages : ").append(page.getTotalPages()).append("\n");
-        sb.append("Page en cours : ").append(page.getNumber()).append("\n");
-        for (Agence a : page.getContent()) {
-            sb.append("Agence ").append(a.getIdAgence())
-                    .append(" : ").append(a.getNom())
-                    .append(" (").append(a.getVille()).append(")\n");
+
+        Page<Agence> premierePage = fullAgenceRepository.findAll(PageRequest.of(0, 2, sort));
+        sb.append("Total pages : ").append(premierePage.getTotalPages()).append("\n");
+
+        for (int i = 0; i < premierePage.getTotalPages(); i++) {
+            Page<Agence> page = fullAgenceRepository.findAll(PageRequest.of(i, 2, sort));
+            sb.append("--- Page en cours : ").append(page.getNumber()).append("\n");
+            for (Agence a : page.getContent()) {
+                sb.append(a.getIdAgence()).append(" | ").append(a.getNom()).append("\n");
+            }
         }
         fail(sb.toString());
     }
