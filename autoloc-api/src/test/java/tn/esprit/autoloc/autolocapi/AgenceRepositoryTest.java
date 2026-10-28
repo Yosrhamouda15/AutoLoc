@@ -5,34 +5,36 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 import tn.esprit.autoloc.autolocapi.domain.Agence;
 import tn.esprit.autoloc.autolocapi.domain.CategorieVehicule;
 import tn.esprit.autoloc.autolocapi.domain.StatutVehicule;
 import tn.esprit.autoloc.autolocapi.domain.Vehicule;
 import tn.esprit.autoloc.autolocapi.repository.IAgenceRepository;
+import tn.esprit.autoloc.autolocapi.service.IAgenceService;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @SpringBootTest
 class AgenceRepositoryTest {
 
-    // étape 2 : attribut renommé
     @Autowired
     private AgenceRepositoryMock basicAgenceRepository;
 
-    // étape 3 : le dépôt Spring Data JPA, DANS la classe
     @Autowired
     private IAgenceRepository fullAgenceRepository;
 
-    // étapes 4, 5, 6 : privée, sans @Test, dépôt en paramètre
+    // Étape 12 : le service
+    @Autowired
+    private IAgenceService agenceService;
+
     private void addAgence(CrudRepository<Agence, Long> repository) {
-        // 5 chiffres max, jamais négatif : "210 TUN 1234-" (13 car.) + 5 = 18 <= 20
         String suffixe = String.valueOf(System.currentTimeMillis() % 100000);
 
         Agence agence = new Agence();
@@ -63,7 +65,6 @@ class AgenceRepositoryTest {
         repository.save(agence);
     }
 
-    // étape 7
     @Test
     void basicAddAgence() {
         addAgence(basicAgenceRepository);
@@ -74,7 +75,6 @@ class AgenceRepositoryTest {
         addAgence(fullAgenceRepository);
     }
 
-    // étape 10 : même principe pour le chargement
     private void loadAgence(CrudRepository<Agence, Long> repository, String typeDepot) {
         StringBuilder sb = new StringBuilder();
         sb.append("Dépôt utilisé : ").append(typeDepot).append("\n");
@@ -101,7 +101,6 @@ class AgenceRepositoryTest {
         loadAgence(fullAgenceRepository, "full (IAgenceRepository / JpaRepository)");
     }
 
-    // étapes 11 à 14 : agences triées par id décroissant
     @Test
     void loadSortedAgences() {
         List<Agence> agences = fullAgenceRepository.findAll(Sort.by(Sort.Direction.DESC, "idAgence"));
@@ -116,10 +115,6 @@ class AgenceRepositoryTest {
         fail(sb.toString());
     }
 
-    // étapes 15 à 18 : tri décroissant + pagination par lots de 2
-    // (le tri est volontairement dupliqué par rapport à loadSortedAgences)
-    // étapes 15 à 18 : tri décroissant + pagination par lots de 2, toutes les pages
-    // (le tri est volontairement dupliqué par rapport à loadSortedAgences)
     @Test
     void loadPagedAgences() {
         Sort sort = Sort.by(Sort.Direction.DESC, "idAgence");
@@ -137,7 +132,23 @@ class AgenceRepositoryTest {
         }
         fail(sb.toString());
     }
+
+    // Étape 13 : test du service
+    @Test
+    void createAgence() {
+        Agence a = new Agence();
+        a.setNom("Agence Test Service");
+        a.setVille("Tunis");
+        a.setAdresse("Rue du Lac");
+        a.setTelephone("71111111");
+
+        Agence saved = agenceService.create(a);
+
+        assertNotNull(saved.getIdAgence());
+    }
 }
 
+// Étape 11 : annotation de bean
+@Repository
 interface AgenceRepositoryMock extends CrudRepository<Agence, Long> {
 }
