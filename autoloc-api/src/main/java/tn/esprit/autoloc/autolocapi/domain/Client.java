@@ -1,5 +1,6 @@
 package tn.esprit.autoloc.autolocapi.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
@@ -28,6 +29,7 @@ public class Client {
     private String numPermis;
     private LocalDate dateInscription;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "client", cascade = {CascadeType.PERSIST, CascadeType.REMOVE}, fetch = FetchType.EAGER)
     private Set<Reservation> reservations = new HashSet<>();
 }
